@@ -8,13 +8,18 @@
    stop_id(Stop, StopId),
    test(StopId, 9956).
 
-:- setof(
-     X,
-     directly_reachable(
-       (56, '8:21:00'),
-       (58, '8:25:00'),
-       X
-     ),
-     Xs
-   ),
-   test(Xs, [8198574, 8199777]).
+:-  stop_id(StartStop, 56), StartStop =.. [stop|_],
+    stop_id(DestStop, 58), DestStop =.. [stop|_], 
+    bagof(
+        TripId,
+        Trip^D^A^(
+            from_to_via(
+                (StartStop, '8:21:00'),
+                (DestStop, '8:25:00'),
+                (Trip, D, A)
+            ),
+            trip_id(Trip, TripId)
+        ),
+        TripIds
+    ),
+    test(TripIds, [8199777, 8198574]).

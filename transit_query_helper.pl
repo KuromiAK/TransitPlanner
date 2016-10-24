@@ -11,7 +11,7 @@ stops_at(Trip, Stop) :-
       stop_id(StopTime, StopId),
       trip_id(StopTime, TripId),
       trip_id(Trip0, TripId),
-      Trip0 = trip(_,_,_,_,_,_,_,_)
+      Trip0 =.. [trip|_]
     ),
     _
     ),
@@ -24,28 +24,40 @@ goes_between(StopA, StopB, Trip) :-
   stops_at(Trip, StopB).
 
 % stop_times
-% (StartStopId, StartTime): stop_id, time(string)
-% (DestStopId, DestTime): stop_id, time(string)
-% TripId: Out trip_id
-directly_reachable((StartStopId, StartTime), (DestStopId, DestTime), TripId) :- true,
+% (StartStop, StartTime): stop(...), time(string)
+% (DestStop, DestTime): stop(...), time(string)
+% (Trip, DepartureStopTime, ArrivalStopTime): Out trip(...), stop_time(...), stop_time(...)
+from_to_via(
+    (StartStop, StartTime),
+    (DestStop, DestTime),
+    (Trip, DepartureStopTime, ArrivalStopTime)
+  ) :-
+  % convert time to seconds for calculation
   time_second(StartTime, StartSecond),
   time_second(DestTime, DestSecond),
-  % departure_time is later than StartTime
-  stop_id(StartStopTime, StartStopId),
-  StartStopTime,
-  departure_time(StartStopTime, DepartureTime),
+  % extract id's
+  stop_id(StartStop, StartStopId),
+  stop_id(DestStop, DestStopId),
+  trip_id(Trip, TripId),
+  Trip =.. [trip|_],
+  % unify DepartureStopTime
+  stop_id(DepartureStopTime, StartStopId),
+  trip_id(DepartureStopTime, TripId),
+  % departure constraints
+  DepartureStopTime, % initialzied
+  departure_time(DepartureStopTime, DepartureTime),
   time_second(DepartureTime, DepartureSecond),
-  StartSecond < DepartureSecond,
-  % shares the same trip
-  trip_id(StartStopTime, TripId),
-  trip_id(DestStopTime, TripId),
-  % arrival_time is earlier than DestTime
-  stop_id(DestStopTime, DestStopId),
-  DestStopTime,
-  arrival_time(DestStopTime, ArrivalTime),
+  StartSecond =< DepartureSecond,
+  % unify ArrivalStopTime
+  stop_id(ArrivalStopTime, DestStopId),
+  trip_id(ArrivalStopTime, TripId),
+  % arrival constraints
+  ArrivalStopTime, % initialized
+  arrival_time(ArrivalStopTime, ArrivalTime),
   time_second(ArrivalTime, ArrivalSecond),
-  ArrivalSecond < DestSecond.
-  
+  DestSecond >= ArrivalSecond,
+  Trip.
+
 
 % stops
 % (Lat, Lon): (number, number)
